@@ -1,59 +1,224 @@
-# SecureStorageWorkspace
+# ngx-secure-storage
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.4.
+> A lightweight, SSR-compatible Angular service to securely store, retrieve, and manage encrypted data in `localStorage` and `sessionStorage` using AES encryption.
 
-## Development server
+![npm](https://img.shields.io/npm/v/ngx-secure-storage)
+![Angular](https://img.shields.io/badge/angular-compatible-brightgreen)
+![NPM Downloads](https://img.shields.io/npm/d18m/ngx-secure-storage)
+![License](https://img.shields.io/npm/l/ngx-secure-storage)
 
-To start a local development server, run:
+**The best way to quickly integrate secure, encrypted client-side storage in Angular.**
 
-```bash
-ng serve
-```
+[//]: # (Note that this package has been optimized to work best with Angular, but you can still use [your-secure-storage-pkg]&#40;https://www.npmjs.com/package/your-secure-storage-pkg&#41; *&#40;replace with actual vanilla package name&#41;* for your project if you prefer to work with vanilla JS/TS.)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## 🚀 Features
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- ✅ **AES Encryption:** Secures data under the hood using `crypto-es`.
+- ✅ **TTL (Time-To-Live):** Set expiry times on your storage items. They automatically clear out when expired!
+- ✅ **SSR-Compatible:** Safely verifies the browser environment before accessing storage.
+- ✅ **Smart Dev Mode:** Auto-detects `localhost` to optionally bypass encryption for easier debugging.
+- ✅ **Storage Routing:** Easily route specific keys permanently to `sessionStorage`.
+- ✅ **Prefixing:** Auto-appends prefixes to keys to prevent collisions with other apps.
+- ✅ **Automatic Parsing:** Built-in JSON stringify and parse support for complex objects.
 
-```bash
-ng generate component component-name
-```
+---
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## 📦 Installation
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Since this package relies on `crypto-es` for robust encryption, ensure you install it as well _(however for NPM 7+, peer-dependencies should be installed automatically)_:
 
 ```bash
-ng test
+npm install ngx-secure-storage
 ```
 
-## Running end-to-end tests
+---
 
-For end-to-end (e2e) testing, run:
+## 🔧 Setup
+You can configure the service globally by providing the `SECURE_STORAGE_CONFIG` token in your `AppModule` (or `app.config.ts` for standalone applications).
+
+```ts
+import { SecureStorageConfig, SECURE_STORAGE_CONFIG } from 'ngx-secure-storage';
+
+@NgModule({
+  providers: [
+    {
+      provide: SECURE_STORAGE_CONFIG,
+      useValue: {
+        encryptionKey: environment.storageKey, // Your secret AES key
+        salt: environment.storageSalt, // Custom salt for PBKDF2 (optional but recommended)
+        prefix: 'MY_APP_',
+        disableInDev: true, // Bypasses encryption on localhost
+        isDev: environment.isDev, // Check if is running locally or in development
+        alwaysUseSessionStorageSet: ['PAYMENT_INFO', 'TEMP_TOKEN'],
+        // ...other configuration settings
+      } as SecureStorageConfig
+    }
+  ]
+})
+export class AppModule {}
+```
+
+Or for standalone applications, in `app.config.ts`:
+
+```ts
+import { SecureStorageConfig, SECURE_STORAGE_CONFIG } from 'ngx-secure-storage';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    // ... other angular providers
+    {
+      provide: SECURE_STORAGE_CONFIG,
+      useValue: {
+        encryptionKey: environment.storageKey, // Your secret AES key
+        // ...other configuration settings
+      } as SecureStorageConfig
+    },
+  ],
+};
+```
+### Additional Configurations:
+Configuration settings can be provided to customize how data is encrypted and stored:
+
+| Property                     | Description                                                                                                                                   | Required? | Default                 |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------|
+| `encryptionKey`              | The secret key used for AES encryption. If left empty, encryption is bypassed.                                                         b      | Yes       | `''`                    |
+| `salt`                       | The secret salt used to derive a strong key from your encryptionKey using `PBKDF2`. For production, consider using a static or per-user salt. | optional  | _Internal default salt_ |
+| `disableInDev`               | If true, bypasses encryption entirely when running in a development environment.                                                              | optional  | `false`                 |
+| `isDev`                      | Flags the environment as dev. If omitted, the service auto-detects based on localhost or loopback IPs.                                        | optional  | _Auto-detected_         |
+| `isBrowser`                  | Explicitly set if the app is in a browser. If omitted, it defaults to checking Angular's `PLATFORM_ID`.                                       | optional  | _Auto-detected_         |
+| `prefix`                     | A prefix appended to all storage keys to prevent collisions.                                                                                  | optional  | `__`                    |
+| `alwaysUseSessionStorageSet` | An array of exact keys that should always be forced into `sessionStorage` instead of `localStorage`.                                          | optional  | `[]`                    |
+
+<i>💡 Tip: Importing `SecureStorageConfig` in your useValue ensures type-safety and IntelliSense autocompletion when setting configuration properties.</i>
+
+---
+
+## 🧠 Usage
+
+Inject the service into your components or other services to easily store and retrieve data.
+```ts
+import { SecureStorageService } from 'ngx-secure-storage';
+
+export class StorageComponent {
+  stored_data;
+
+  constructor(private storage: SecureStorageService) { }
+
+  storeData(key:string, data:any){
+    this.storage.store(key, data);
+  }
+
+  getData(key:string){
+    this.stored_data = this.storage.retrieve(key);
+  }
+
+  deleteData(key:string){
+    this.storage.delete(key);
+    this.stored_data = null;
+  }
+
+  clearDataStore() {
+    this.storage.clearAll();
+  }
+}
+```
+
+---
+
+### Full Usage Example:
+```ts
+import { Component, OnInit } from '@angular/core';
+import { SecureStorageService } from 'ngx-secure-storage';
+
+@Component({
+  selector: 'app-user-profile',
+  template: `...`
+})
+export class UserProfileComponent implements OnInit {
+
+  constructor(private storage: SecureStorageService) {}
+
+  ngOnInit() {
+    // 1. Store a simple string
+    this.storage.store('USER_THEME', 'dark');
+
+    // 2. Store a complex object (set stringify to true)
+    //    WITH a Time-To-Live (expires in 1 hour)
+    const userData = { name: 'Daniel', role: 'Admin' };
+    this.storage.store('USER_DATA', userData, {
+      stringify: true,
+      ttl: 3600000 // Time-to-live in milliseconds
+    });
+
+    // 3. Retrieve and automatically parse the JSON object
+    // (If 1 hour has passed, this will automatically delete the item and return null)
+    const retrievedUser = this.storage.retrieve('USER_DATA', true);
+    console.log(retrievedUser?.name); // 'Daniel'
+  }
+
+  logout() {
+    // 4. Delete data
+    this.storage.delete('USER_DATA');
+    this.storage.delete('USER_THEME');
+  }
+
+  cleanup() {
+    // 5. Clear out all items that have passed their TTL expiry
+    this.storage.clearExpired();
+
+    // OR: Safely wipe all keys created by this service (ignores other app data)
+    this.storage.clearAll();
+  }
+}
+```
+
+---
+
+## 🔑 Methods
+
+| Method                | Parameters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Description                                                                                                                                                    |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| store(`...params`)    | - `key` - The unique identifier for the data. The config prefix is automatically appended. <br/><br/>- `value` - The raw data or object to store. <br/><br/>- `stringify` - Set to `true` if you are storing an object/array so it can be JSON stringified before encryption. <br/><br/>- `useSessionStorage` - Set to `true` to save to _sessionStorage_. If `false`, it defaults to _localStorage_ (unless the key is in `alwaysUseSessionStorageSet`).  <br/><br/>- `ttl` - Time-to-live in milliseconds. Item will be deleted after this duration. | Encrypts and saves data. <br/><br/>You can also just pass the `options` object which accepts `{ stringify, useSessionStorage, ttl }`, after the `value` params |
+| retrieve(`...params`) | - `key` - The unique identifier of the stored data. <br/><br/>- `parseToJSON` - Set to `true` if the stored data was stringified and needs to be parsed back into a JS Object/Array. <br/><br/>- `useSessionStorage` - Set to `true` to force reading from _sessionStorage_. If `false`, it defaults to _localStorage_ (unless the key is in `alwaysUseSessionStorageSet`).                                                                                                                                                                            | Retrieves and decrypts data. Auto-deletes and returns null if the item's TTL has expired.                                                                      |
+| delete(`...params`)   | `key` - The unique identifier of the data to remove (without the prefix).                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Removes the specified key from both localStorage and sessionStorage.                                                                                           |
+| clearExpired()        | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Scans all service-defined storage items and permanently removes any that have passed their TTL. Returns a Promise.                                             |
+| clearAll(`...params`) | `entireStorage` - Choose if you want the entire local and session storage to be cleared. <br/>Default is `false` so only keys defined by this service are removed/cleared.                                                                                                                                                                                                                                                                                                                                                                             | Removes all storage items. Defaults to false (only clears items with your configured prefix). If true, runs a global .clear() on all browser storage.          |
+
+---
+
+## ⚙️ Configuration Summary
+
+| Feature        | Customizable                     | Default Behavior                             |
+|----------------|----------------------------------|----------------------------------------------|
+| Encryption     | ✅ `encryptionKey`                | Encrypts via `crypto-es` AES                 |
+| Dev Mode       | ✅ `disableInDev`, `isDev`        | Auto-detects `localhost` / `127.0.0.1`       |
+| Storage Target | ✅ `alwaysUseSessionStorageSet`   | Defaults to `localStorage` unless overridden |
+| SSR Safety     | ✅ `isBrowser`                    | Uses Angular's `@Inject(PLATFORM_ID)`        |
+
+---
+
+## 🧪 Development
 
 ```bash
-ng e2e
+# Run tests
+ng test ngx-secure-storage
+
+# Build for production
+ng build ngx-secure-storage
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+---
 
-## Additional Resources
+## 🔒 License
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Apache-2.0 © MadeByRaymond (Daniel Obiekwe)
+
+---
+
+## ❤️ Support
+
+If you find this package helpful, you can support our projects here:
+
+[![Buy Me a Smoothie](https://img.buymeacoffee.com/button-api/?text=Buy%20Me%20a%20Smoothie&emoji=🍹&slug=MadeByRaymond&button_colour=FFDD00&font_colour=000000&font_family=Comic&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/MadeByRaymond)

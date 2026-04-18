@@ -1,9 +1,20 @@
 {
   "name": "ngx-secure-storage",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Angular service for encrypting, securely storing and retrieving app browser storage",
   "author": "MadeByRaymond (Daniel Obiekwe)",
-  "keywords": ["angular", "local", "session", "storage", "secure", "encrypted", "localstorage", "sessionstorage", "security", "encryption"],
+  "keywords": [
+    "angular",
+    "local",
+    "session",
+    "storage",
+    "secure",
+    "encrypted",
+    "localstorage",
+    "sessionstorage",
+    "security",
+    "encryption"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -16,7 +27,7 @@
   "peerDependencies": {
     "@angular/common": "^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0",
     "@angular/core": "^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0",
-    "crypto-ts": "^1.0.2"
+    "crypto-es": "^3.1.2"
   },
   "dependencies": {
     "tslib": "^2.3.0"

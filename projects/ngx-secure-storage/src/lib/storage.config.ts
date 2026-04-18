@@ -7,6 +7,13 @@ export interface SecureStorageConfig {
    */
   encryptionKey: string;
   /**
+   * The secret salt used to derive a strong key from your encryptionKey using `PBKDF2`.
+   * If left blank, defaults to a default public salt.
+   *
+   * Note: For production, consider using a static salt or storing one per-user _based on your use-case_
+   */
+  salt?: string;
+  /**
    * If true, bypasses encryption entirely when `isDev` is true.
    * @default false
    */
