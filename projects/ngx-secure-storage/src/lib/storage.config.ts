@@ -1,6 +1,9 @@
 import { InjectionToken } from '@angular/core';
 
-export interface SecureStorageConfig {
+/**
+ * Configuration Interface for `ngx-secure-storage` Injection Token `SECURE_STORAGE_CONFIG`
+ */
+export interface StorageConfig {
   /**
    * The secret key used for AES encryption.
    * If left blank, encryption is bypassed (disabled).
@@ -46,6 +49,11 @@ export interface SecureStorageConfig {
   alwaysUseSessionStorageSet?: string[];
 }
 
-export const SECURE_STORAGE_CONFIG = new InjectionToken<SecureStorageConfig>(
+/**
+ * `ngx-secure-storage` Injection Token `SECURE_STORAGE_CONFIG`.
+ *
+ * Use values with type `StorageConfig`.
+ */
+export const SECURE_STORAGE_CONFIG = new InjectionToken<StorageConfig>(
   'SECURE_STORAGE_CONFIG'
 );
