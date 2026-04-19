@@ -9,7 +9,7 @@
 
 **The best way to quickly integrate secure, encrypted client-side storage in Angular.**
 
-[//]: # (Note that this package has been optimized to work best with Angular, but you can still use [your-secure-storage-pkg]&#40;https://www.npmjs.com/package/your-secure-storage-pkg&#41; *&#40;replace with actual vanilla package name&#41;* for your project if you prefer to work with vanilla JS/TS.)
+Note that this package has been optimized to work best with Angular, but you can still use [secure-storage-ts](https://www.npmjs.com/package/secure-storage-ts) for your project if you prefer to work with vanilla JS/TS.
 
 ---
 
@@ -39,7 +39,7 @@ npm install ngx-secure-storage
 You can configure the service globally by providing the `SECURE_STORAGE_CONFIG` token in your `AppModule` (or `app.config.ts` for standalone applications).
 
 ```ts
-import { SecureStorageConfig, SECURE_STORAGE_CONFIG } from 'ngx-secure-storage';
+import { StorageConfig, SECURE_STORAGE_CONFIG } from 'ngx-secure-storage';
 
 @NgModule({
   providers: [
@@ -53,7 +53,7 @@ import { SecureStorageConfig, SECURE_STORAGE_CONFIG } from 'ngx-secure-storage';
         isDev: environment.isDev, // Check if is running locally or in development
         alwaysUseSessionStorageSet: ['PAYMENT_INFO', 'TEMP_TOKEN'],
         // ...other configuration settings
-      } as SecureStorageConfig
+      } as StorageConfig
     }
   ]
 })
@@ -63,7 +63,7 @@ export class AppModule {}
 Or for standalone applications, in `app.config.ts`:
 
 ```ts
-import { SecureStorageConfig, SECURE_STORAGE_CONFIG } from 'ngx-secure-storage';
+import { StorageConfig, SECURE_STORAGE_CONFIG } from 'ngx-secure-storage';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -73,7 +73,7 @@ export const appConfig: ApplicationConfig = {
       useValue: {
         encryptionKey: environment.storageKey, // Your secret AES key
         // ...other configuration settings
-      } as SecureStorageConfig
+      } as StorageConfig
     },
   ],
 };
@@ -91,7 +91,7 @@ Configuration settings can be provided to customize how data is encrypted and st
 | `prefix`                     | A prefix appended to all storage keys to prevent collisions.                                                                                  | optional  | `__`                    |
 | `alwaysUseSessionStorageSet` | An array of exact keys that should always be forced into `sessionStorage` instead of `localStorage`.                                          | optional  | `[]`                    |
 
-<i>💡 Tip: Importing `SecureStorageConfig` in your useValue ensures type-safety and IntelliSense autocompletion when setting configuration properties.</i>
+<i>💡 Tip: Importing `StorageConfig` in your useValue ensures type-safety and IntelliSense autocompletion when setting configuration properties.</i>
 
 ---
 
@@ -107,7 +107,7 @@ export class StorageComponent {
   constructor(private storage: SecureStorageService) { }
 
   storeData(key:string, data:any){
-    this.storage.store(key, data);
+    this.storage.store(key, data, false, 3600000);
   }
 
   getData(key:string){
@@ -144,17 +144,15 @@ export class UserProfileComponent implements OnInit {
     // 1. Store a simple string
     this.storage.store('USER_THEME', 'dark');
 
-    // 2. Store a complex object (set stringify to true)
-    //    WITH a Time-To-Live (expires in 1 hour)
+    // 2. Store a complex object WITH a Time-To-Live (expires in 1 hour)
     const userData = { name: 'Daniel', role: 'Admin' };
     this.storage.store('USER_DATA', userData, {
-      stringify: true,
-      ttl: 3600000 // Time-to-live in milliseconds
+      ttl: 3600000, // Time-to-live in milliseconds
     });
 
     // 3. Retrieve and automatically parse the JSON object
     // (If 1 hour has passed, this will automatically delete the item and return null)
-    const retrievedUser = this.storage.retrieve('USER_DATA', true);
+    const retrievedUser = this.storage.retrieve('USER_DATA');
     console.log(retrievedUser?.name); // 'Daniel'
   }
 
@@ -178,13 +176,13 @@ export class UserProfileComponent implements OnInit {
 
 ## 🔑 Methods
 
-| Method                | Parameters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Description                                                                                                                                                    |
-|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| store(`...params`)    | - `key` - The unique identifier for the data. The config prefix is automatically appended. <br/><br/>- `value` - The raw data or object to store. <br/><br/>- `stringify` - Set to `true` if you are storing an object/array so it can be JSON stringified before encryption. <br/><br/>- `useSessionStorage` - Set to `true` to save to _sessionStorage_. If `false`, it defaults to _localStorage_ (unless the key is in `alwaysUseSessionStorageSet`).  <br/><br/>- `ttl` - Time-to-live in milliseconds. Item will be deleted after this duration. | Encrypts and saves data. <br/><br/>You can also just pass the `options` object which accepts `{ stringify, useSessionStorage, ttl }`, after the `value` params |
-| retrieve(`...params`) | - `key` - The unique identifier of the stored data. <br/><br/>- `parseToJSON` - Set to `true` if the stored data was stringified and needs to be parsed back into a JS Object/Array. <br/><br/>- `useSessionStorage` - Set to `true` to force reading from _sessionStorage_. If `false`, it defaults to _localStorage_ (unless the key is in `alwaysUseSessionStorageSet`).                                                                                                                                                                            | Retrieves and decrypts data. Auto-deletes and returns null if the item's TTL has expired.                                                                      |
-| delete(`...params`)   | `key` - The unique identifier of the data to remove (without the prefix).                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Removes the specified key from both localStorage and sessionStorage.                                                                                           |
-| clearExpired()        | _none_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Scans all service-defined storage items and permanently removes any that have passed their TTL. Returns a Promise.                                             |
-| clearAll(`...params`) | `entireStorage` - Choose if you want the entire local and session storage to be cleared. <br/>Default is `false` so only keys defined by this service are removed/cleared.                                                                                                                                                                                                                                                                                                                                                                             | Removes all storage items. Defaults to false (only clears items with your configured prefix). If true, runs a global .clear() on all browser storage.          |
+| Method                | Parameters                                                                                                                                                                                                                                                                                                                                                                                                                 | Description                                                                                                                                            |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| store(`...params`)    | - `key` - The unique identifier for the data. The config prefix is automatically appended. <br/><br/>- `value` - The raw data or object to store. <br/><br/>- `useSessionStorage` - Set to `true` to save to _sessionStorage_. If `false`, it defaults to _localStorage_ (unless the key is in `alwaysUseSessionStorageSet`).  <br/><br/>- `ttl` - Time-to-live in milliseconds. Item will be deleted after this duration. | Encrypts and saves data. <br/><br/>You can also just pass the `options` object which accepts `{ useSessionStorage, ttl }`, after the `value` params    |
+| retrieve(`...params`) | - `key` - The unique identifier of the stored data. <br/><br/>- `useSessionStorage` - Set to `true` to force reading from _sessionStorage_. If `false`, it defaults to _localStorage_ (unless the key is in `alwaysUseSessionStorageSet`).                                                                                                                                                                                 | Retrieves and decrypts data. Auto-deletes and returns null if the item's TTL has expired.                                                              |
+| delete(`...params`)   | `key` - The unique identifier of the data to remove (without the prefix).                                                                                                                                                                                                                                                                                                                                                  | Removes the specified key from both localStorage and sessionStorage.                                                                                   |
+| clearExpired()        | _none_                                                                                                                                                                                                                                                                                                                                                                                                                     | Scans all service-defined storage items and permanently removes any that have passed their TTL. Returns a Promise.                                     |
+| clearAll(`...params`) | `entireStorage` - Choose if you want the entire local and session storage to be cleared. <br/>Default is `false` so only keys defined by this service are removed/cleared.                                                                                                                                                                                                                                                 | Removes all storage items. Defaults to false (only clears items with your configured prefix). If true, runs a global .clear() on all browser storage.  |
 
 ---
 
@@ -208,6 +206,27 @@ ng test ngx-secure-storage
 # Build for production
 ng build ngx-secure-storage
 ```
+
+---
+
+## 🔧 Troubleshooting
+
+If you are getting an error like this:
+
+``
+Module not found: Error: Can't resolve 'crypto-es' in ...
+``.
+
+Simply install the `crypto-es` package and this would be resolved:
+```bash
+npm install crypto-es
+```
+
+The reason is that for older npm version `NPM < 7`, peer-dependencies may not install automatically. 
+
+Or if you install packages using the flags `--legacy-peer-deps` or `--force`, this would essentially tell npm
+to fallback to an earlier (legacy) version which does not automatically install peer-dependencies. You would 
+have to now manually define the peer deps from the package to install. In this case `crypto-es`.
 
 ---
 
