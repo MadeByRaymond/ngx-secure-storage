@@ -1,15 +1,13 @@
 import {Inject, Injectable, Optional, PLATFORM_ID} from '@angular/core';
-import {SECURE_STORAGE_CONFIG, SecureStorageConfig} from './storage.config';
+import {SECURE_STORAGE_CONFIG, StorageConfig} from './storage.config';
 import {isPlatformBrowser} from '@angular/common';
 import * as CryptoJS from 'crypto-es';
 
 /**
- * @prop stringify - Set to `true` to JSON stringify the value before encryption.
  * @prop useSessionStorage - Set to `true` to save to `sessionStorage`.
  * @prop ttl - Time-to-live in milliseconds. Item will be deleted after this duration.
  */
 interface StoreOptions {
-  stringify?: boolean;
   useSessionStorage?: boolean;
   ttl?: number
 }
@@ -31,7 +29,7 @@ export class SecureStorageService {
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
-    @Optional() @Inject(SECURE_STORAGE_CONFIG) config: SecureStorageConfig
+    @Optional() @Inject(SECURE_STORAGE_CONFIG) config: StorageConfig
   ) {
     if (!config) {
       console.warn('StorageService: SECURE_STORAGE_CONFIG is missing. Falling back to defaults.');
@@ -127,7 +125,7 @@ export class SecureStorageService {
    * Encrypts and saves data into the browser's storage using an options object.
    * @param key - The unique identifier for the data.
    * @param value - The raw data or object to store.
-   * @param options - Configuration object (stringify, useSessionStorage, ttl).
+   * @param options - Configuration object (useSessionStorage, ttl).
    */
   store(key: string, value: any, options?:StoreOptions ): void;
 
@@ -135,11 +133,10 @@ export class SecureStorageService {
    * Encrypts and saves data into the browser's storage using positional arguments.
    * @param key - The unique identifier for the data.
    * @param value - The raw data or object to store.
-   * @param stringify - Set to `true` to JSON stringify the value before encryption.
    * @param useSessionStorage - Set to `true` to save to `sessionStorage`.
    * @param ttl - Time-to-live in milliseconds. Item will be deleted after this duration.
    */
-  store(key: string, value: any, stringify?: boolean, useSessionStorage?: boolean, ttl?: number): void;
+  store(key: string, value: any, useSessionStorage?: boolean, ttl?: number): void;
 
   /**
    * Encrypts and saves data into the browser's storage.
@@ -147,32 +144,32 @@ export class SecureStorageService {
   store(
     key: string,
     value: any,
-    optionsOrStringify?: boolean | StoreOptions,
-    useSessionStorageArg?: boolean,
+    optionsOrUseSessionStorage?: boolean | StoreOptions,
     ttlArg?: number
   ): void {
     if (!this.isBrowser) return;
 
-    let stringify = false;
     let useSessionStorage = false;
     let ttl: number | undefined;
 
     // Detect which overload is being used
-    if (typeof optionsOrStringify === 'object' && optionsOrStringify !== null) {
-      stringify = !!optionsOrStringify?.stringify;
-      useSessionStorage = !!optionsOrStringify?.useSessionStorage;
-      ttl = optionsOrStringify?.ttl;
+    if (typeof optionsOrUseSessionStorage === 'object' && optionsOrUseSessionStorage !== null) {
+      useSessionStorage = !!optionsOrUseSessionStorage?.useSessionStorage;
+      ttl = optionsOrUseSessionStorage?.ttl;
     } else {
-      stringify = !!optionsOrStringify;
-      useSessionStorage = !!useSessionStorageArg;
+      useSessionStorage = !!optionsOrUseSessionStorage;
       ttl = ttlArg;
     }
     const useSessionStore = useSessionStorage || this.alwaysUseSessionStorageSet.includes(key);
 
+    const isObject = (typeof value === 'object' && value !== null);
+    const isNotEncrypted = (this.isDev && this.disableInDev);
+
     // Create a storage envelope to hold the data and the encrypted expiry timestamp
     const envelope = {
-      data: stringify ? JSON.stringify(value) : value,
-      expiry: ttl ? Date.now() + ttl : null
+      data: (!isObject || isNotEncrypted) ? value : JSON.stringify(value),
+      expiry: ttl ? Date.now() + ttl : null,
+      isObject
     };
 
     const encryptedValue = this.encrypt(JSON.stringify(envelope));
@@ -185,11 +182,10 @@ export class SecureStorageService {
   /**
    * Retrieves and decrypts a value from the browser's storage.
    * @param key - The unique identifier of the stored data.
-   * @param parseToJSON - Set to `true` if the stored data was stringified and needs to be parsed back into a JS Object/Array.
    * @param useSessionStorage - Set to `true` to force reading from `sessionStorage`. If `false`, it defaults to `localStorage` (unless the key is in `alwaysUseSessionStorageSet`).
    * @returns The decrypted string, the parsed JSON object, or `null` if the item doesn't exist or decryption fails.
    */
-  retrieve(key: string, parseToJSON = false, useSessionStorage:boolean = false) {
+  retrieve(key: string, useSessionStorage:boolean = false) {
     if (!this.isBrowser) return null;
 
     try {
@@ -210,8 +206,11 @@ export class SecureStorageService {
         return null;
       }
 
+      const isNotEncrypted = (this.isDev && this.disableInDev);
+      const isSavedAsRawValue = (isNotEncrypted || !(envelope?.isObject))
+
       const value = envelope.data;
-      return !parseToJSON ? value : JSON.parse(value || 'null');
+      return isSavedAsRawValue ? value : JSON.parse(value || 'null');
 
     } catch (error) {
       console.error(error);
