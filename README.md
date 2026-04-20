@@ -83,7 +83,7 @@ Configuration settings can be provided to customize how data is encrypted and st
 
 | Property                     | Description                                                                                                                                   | Required? | Default                 |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------|
-| `encryptionKey`              | The secret key used for AES encryption. If left empty, encryption is bypassed.                                                         b      | Yes       | `''`                    |
+| `encryptionKey`              | The secret key used for AES encryption. If left empty, encryption is bypassed.                                                                | Yes       | `''`                    |
 | `salt`                       | The secret salt used to derive a strong key from your encryptionKey using `PBKDF2`. For production, consider using a static or per-user salt. | optional  | _Internal default salt_ |
 | `disableInDev`               | If true, bypasses encryption entirely when running in a development environment.                                                              | optional  | `false`                 |
 | `isDev`                      | Flags the environment as dev. If omitted, the service auto-detects based on localhost or loopback IPs.                                        | optional  | _Auto-detected_         |
