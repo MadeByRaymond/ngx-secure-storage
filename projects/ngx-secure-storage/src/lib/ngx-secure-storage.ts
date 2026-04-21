@@ -233,7 +233,10 @@ export class SecureStorageService {
    */
   clearExpired() {
     return new Promise<void>(resolve => {
-      if (!this.isBrowser) return;
+      if (!this.isBrowser) {
+        resolve();
+        return;
+      }
 
       [localStorage, sessionStorage].forEach(storage => {
         Object.keys(storage).forEach(fullKey => {
@@ -244,6 +247,8 @@ export class SecureStorageService {
           }
         });
       });
+
+      resolve();
     });
   }
 
@@ -259,7 +264,10 @@ export class SecureStorageService {
    */
    clearAll(entireStorage = false) {
     return new Promise<void>(resolve => {
-      if (!this.isBrowser) return;
+      if (!this.isBrowser) {
+        resolve();
+        return;
+      }
 
       if (entireStorage) {
         localStorage.clear();
@@ -273,6 +281,8 @@ export class SecureStorageService {
           });
         })
       }
+
+      resolve();
     });
   }
 }
