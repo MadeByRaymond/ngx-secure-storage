@@ -22,6 +22,7 @@ Note that this package has been optimized to work best with Angular, but you can
 - ✅ **Storage Routing:** Easily route specific keys permanently to `sessionStorage`.
 - ✅ **Prefixing:** Auto-appends prefixes to keys to prevent collisions with other apps.
 - ✅ **Automatic Parsing:** Built-in JSON stringify and parse support for complex objects.
+- ✅ **Time Utility Class:** Built-in `TimeHelpers` class to convert time units to milliseconds (for TTL implementations and similar use cases).
 
 ---
 
@@ -96,7 +97,7 @@ Configuration settings can be provided to customize how data is encrypted and st
 
 Inject the service into your components or other services to easily store and retrieve data.
 ```ts
-import { SecureStorageService } from 'ngx-secure-storage';
+import { SecureStorageService, TimeHelpers } from 'ngx-secure-storage';
 
 export class StorageComponent {
   stored_data;
@@ -104,7 +105,7 @@ export class StorageComponent {
   constructor(private storage: SecureStorageService) { }
 
   storeData(key:string, data:any){
-    this.storage.store(key, data, false, 3600000);
+    this.storage.store(key, data, false, TimeHelpers.minuteToMs(60)); // Note: TimeHelpers.minuteToMs(60) = 3600000
   }
 
   getData(key:string){
@@ -127,7 +128,7 @@ export class StorageComponent {
 ### Full Usage Example:
 ```ts
 import { Component, OnInit } from '@angular/core';
-import { SecureStorageService } from 'ngx-secure-storage';
+import { SecureStorageService, TimeHelpers } from 'ngx-secure-storage';
 
 @Component({
   selector: 'app-user-profile',
@@ -144,7 +145,7 @@ export class UserProfileComponent implements OnInit {
     // 2. Store a complex object WITH a Time-To-Live (expires in 1 hour)
     const userData = { name: 'Daniel', role: 'Admin' };
     this.storage.store('USER_DATA', userData, {
-      ttl: 3600000, // Time-to-live in milliseconds
+      ttl: TimeHelpers.minuteToMs(60) // or 3600000 – Time-to-live in milliseconds
     });
 
     // 3. Retrieve and automatically parse the JSON object
