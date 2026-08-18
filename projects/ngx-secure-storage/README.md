@@ -142,10 +142,10 @@ export class UserProfileComponent implements OnInit {
     // 1. Store a simple string
     this.storage.store('USER_THEME', 'dark');
 
-    // 2. Store a complex object WITH a Time-To-Live (expires in 1 hour)
+    // 2. Store a complex object WITH a Time-To-Live (expires in 12 hours)
     const userData = { name: 'Daniel', role: 'Admin' };
     this.storage.store('USER_DATA', userData, {
-      ttl: TimeHelpers.minuteToMs(60) // or 3600000 – Time-to-live in milliseconds
+      ttl: TimeHelpers.hoursToMs(12) // or 43200000 – Time-to-live in milliseconds
     });
 
     // 3. Retrieve and automatically parse the JSON object
